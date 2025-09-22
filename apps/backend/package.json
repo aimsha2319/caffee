@@ -23,7 +23,7 @@
     "@nestjs/platform-express": "10.3.3",
     "@prisma/client": "5.9.1",
     "@faker-js/faker": "8.3.1",
-    "apollo-server-core": "4.10.2",
+    "apollo-server-core": "3.13.0",
     "bcrypt": "5.1.1",
     "class-transformer": "0.5.1",
     "class-validator": "0.14.1",
