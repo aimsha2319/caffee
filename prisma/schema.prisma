@@ -1,0 +1,241 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id              String      @id @default(cuid())
+  email           String      @unique
+  name            String
+  handle          String      @unique
+  photoUrl        String?
+  isCreator       Boolean     @default(false)
+  isOwner         Boolean     @default(false)
+  bio             String?
+  dietPreferences String[]    @default([])
+  trustScore      Float       @default(0.5)
+  trustTier       String      @default("new")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  reviews         Review[]
+  comments        Comment[]
+  lists           List[]
+  notifications   Notification[]
+  ownerPlaces     Place[]     @relation("PlaceOwner")
+  reactions       Reaction[]
+  claims          Claim[]     @relation("ClaimRequester")
+  followers       UserFollow[] @relation("TargetUser")
+  following       UserFollow[] @relation("SourceUser")
+}
+
+model UserFollow {
+  id        String @id @default(cuid())
+  sourceId  String
+  targetId  String
+  createdAt DateTime @default(now())
+
+  source User @relation("SourceUser", fields: [sourceId], references: [id])
+  target User @relation("TargetUser", fields: [targetId], references: [id])
+
+  @@unique([sourceId, targetId])
+}
+
+model Place {
+  id                  String      @id @default(cuid())
+  name                String
+  geohash             String
+  latitude            Float
+  longitude           Float
+  address             String
+  city                String
+  country             String
+  cuisineTags         String[]
+  priceLevel          Int
+  amenities           String[]    @default([])
+  hours               Json?
+  ownerId             String?     
+  claimStatus         String      @default("unclaimed")
+  photos              String[]    @default([])
+  phone               String?
+  website             String?
+  social              Json?
+  averageOverall      Float?      @default(0)
+  reviewerTrustAvg    Float?      @default(0.5)
+  reviewDiversity     Float?      @default(0.5)
+  consistencyScore    Float?      @default(0.5)
+  mediaQualityScore   Float?      @default(0.5)
+  verifiedVisitRatio  Float?      @default(0.3)
+  brigadeFlagged      Boolean     @default(false)
+  latestReviewAt      DateTime?
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  owner               User?       @relation("PlaceOwner", fields: [ownerId], references: [id])
+  menuItems           MenuItem[]
+  reviews             Review[]
+  lists               ListItem[]
+  claims              Claim[]
+}
+
+model MenuItem {
+  id             String   @id @default(cuid())
+  placeId        String
+  name           String
+  category       String
+  price          Float?
+  allergens      String[] @default([])
+  isCoffeeSpecific Boolean @default(false)
+  attributes     Json?
+  place          Place    @relation(fields: [placeId], references: [id])
+  reviewItems    ReviewItem[]
+}
+
+model Review {
+  id               String        @id @default(cuid())
+  placeId          String
+  userId           String
+  overall          Float
+  food             Float?
+  service          Float?
+  ambience         Float?
+  value            Float?
+  consistency      Float?
+  coffee           Float?
+  text             String?
+  visitType        String?
+  visitAt          DateTime?
+  partySize        Int?
+  waitMinutes      Int?
+  isVerifiedVisit  Boolean       @default(false)
+  visibility       String        @default("public")
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  place            Place         @relation(fields: [placeId], references: [id])
+  user             User          @relation(fields: [userId], references: [id])
+  media            ReviewMedia[]
+  itemsReviewed    ReviewItem[]
+  comments         Comment[]
+  reactions        Reaction[]
+}
+
+model ReviewMedia {
+  id        String   @id @default(cuid())
+  reviewId  String
+  userId    String
+  placeId   String?
+  type      String
+  url       String
+  width     Int
+  height    Int
+  duration  Int?
+  exif      Json?
+  alt       String?
+  review    Review  @relation(fields: [reviewId], references: [id])
+  user      User    @relation(fields: [userId], references: [id])
+}
+
+model ReviewItem {
+  id         String   @id @default(cuid())
+  reviewId   String
+  menuItemId String
+  rating     Float
+  notes      String?
+  review     Review   @relation(fields: [reviewId], references: [id])
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  reviewId  String
+  parentId  String?
+  userId    String
+  text      String
+  isOwner   Boolean  @default(false)
+  createdAt DateTime @default(now())
+  review    Review   @relation(fields: [reviewId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  parent    Comment? @relation("CommentReplies", fields: [parentId], references: [id])
+  replies   Comment[] @relation("CommentReplies")
+}
+
+model Reaction {
+  id        String   @id @default(cuid())
+  entityType String
+  entityId  String
+  userId    String
+  type      String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model List {
+  id             String     @id @default(cuid())
+  ownerId        String
+  title          String
+  description    String?
+  isCollaborative Boolean   @default(false)
+  coverMedia     String?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+  owner          User       @relation(fields: [ownerId], references: [id])
+  items          ListItem[]
+}
+
+model ListItem {
+  id        String   @id @default(cuid())
+  listId    String
+  placeId   String
+  note      String?
+  addedAt   DateTime @default(now())
+  list      List     @relation(fields: [listId], references: [id])
+  place     Place    @relation(fields: [placeId], references: [id])
+}
+
+model Claim {
+  id           String   @id @default(cuid())
+  placeId      String   @unique
+  requesterId  String
+  status       String   @default("pending")
+  documents    String[]
+  createdAt    DateTime @default(now())
+  reviewedAt   DateTime?
+  place        Place    @relation(fields: [placeId], references: [id])
+  requester    User     @relation("ClaimRequester", fields: [requesterId], references: [id])
+}
+
+model Report {
+  id            String   @id @default(cuid())
+  entityType    String
+  entityId      String
+  reporterId    String
+  reason        String
+  details       String?
+  status        String   @default("pending")
+  resolutionNote String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  payload   Json
+  seenAt    DateTime?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model FeatureFlag {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  description String
+  enabled   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+}
+
+@@index([latitude, longitude])
+@@fulltext([name, city])

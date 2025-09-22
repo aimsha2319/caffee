@@ -1,0 +1,25 @@
+{
+  "name": "caffee-monorepo",
+  "private": true,
+  "packageManager": "pnpm@8.15.4",
+  "scripts": {
+    "dev:web": "pnpm --filter web dev",
+    "dev:mobile": "pnpm --filter mobile start",
+    "dev:backend": "pnpm --filter backend start:dev",
+    "build": "pnpm run -r build",
+    "lint": "pnpm run -r lint",
+    "test": "pnpm run -r test",
+    "format": "pnpm run -r format"
+  },
+  "devDependencies": {
+    "typescript": "5.4.5",
+    "ts-node": "10.9.2",
+    "@types/node": "20.11.30",
+    "eslint": "8.57.0",
+    "prettier": "3.2.5",
+    "@typescript-eslint/eslint-plugin": "6.21.0",
+    "@typescript-eslint/parser": "6.21.0",
+    "eslint-plugin-react": "7.33.2",
+    "eslint-plugin-react-hooks": "4.6.0"
+  }
+}
